@@ -1,0 +1,5 @@
+name: EasySit
+version: '${project.version}'
+main: xyz.artuto.easysit.EasySit
+api-version: 1.17
+authors: [ Artuto ]
