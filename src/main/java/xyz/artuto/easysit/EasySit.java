@@ -1,10 +1,14 @@
 package xyz.artuto.easysit;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.type.Stairs;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -13,6 +17,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.spigotmc.event.entity.EntityDismountEvent;
 
@@ -38,10 +43,25 @@ public final class EasySit extends JavaPlugin implements Listener
         if(clickedBlock == null || !Tag.STAIRS.isTagged(clickedBlock.getType()))
             return;
 
-        if(event.getPlayer().isInsideVehicle())
+        Player player = event.getPlayer();
+        if(player.isSneaking() || player.isInsideVehicle())
             return;
 
-        spawnEntity(clickedBlock, event.getPlayer());
+        if(!clickedBlock.getRelative(BlockFace.UP).isPassable())
+            return;
+
+        if(!checkStair(clickedBlock))
+            return;
+
+        if(event.hasItem() && event.getItem() != null)
+        {
+            ItemStack item = event.getItem();
+            if(item.getType().isBlock() || item.getType() == Material.LAVA_BUCKET || item.getType() == Material.WATER_BUCKET)
+                return;
+        }
+
+        spawnEntity(clickedBlock, player);
+        event.setCancelled(true);
     }
 
     @EventHandler
@@ -72,6 +92,14 @@ public final class EasySit extends JavaPlugin implements Listener
             armorStand.getPersistentDataContainer().set(KEY, BYTE, (byte) 1);
         });
         entity.addPassenger(player);
+    }
+
+    private boolean checkStair(Block clickedBlock)
+    {
+        if(clickedBlock.getBlockData() instanceof Stairs stair)
+            return !stair.isWaterlogged() && stair.getHalf() == Bisected.Half.BOTTOM;
+
+        return false;
     }
 
     private Location centerLocation(Location original)
